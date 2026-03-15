@@ -15,7 +15,7 @@ if str(SCRIPT_DIR) not in sys.path:
 def main():
     df = pd.read_csv(PROJECT_ROOT / "data" / "iris.csv")
     Xt = df.drop("variety", axis=1).to_numpy().T
-    y = df["variety"]
+    y = df["variety"].to_numpy()
     print(f"Xt shape: {Xt.shape}")
     print(f"y shape: {y.shape}")
     

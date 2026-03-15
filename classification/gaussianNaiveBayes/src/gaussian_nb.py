@@ -1,7 +1,7 @@
 import numpy as np
 
 class GaussianNB:
-    def __init__(self, ):
+    def __init__(self):
         
         self.class_labels = None
         self.class_counts = None
