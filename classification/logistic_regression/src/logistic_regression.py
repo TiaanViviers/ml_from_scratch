@@ -15,6 +15,9 @@ class LogisticRegression():
         self.n_iter = None
         self.converged = None
     
+    ############################################################################
+    # Public API
+    ############################################################################
     
     def fit(self, X, y):
         X, y = self._validate_input(X, y)
@@ -94,7 +97,9 @@ class LogisticRegression():
         return np.array(preds)
     
 
-
+    ############################################################################
+    # Helper methods
+    ############################################################################
 
     def _validate_input(self, X, y):
         # Coerce inputs to NumPy arrays for consistent indexing.
