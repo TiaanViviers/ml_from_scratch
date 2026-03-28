@@ -1,5 +1,5 @@
 import numpy as np
-from k_means import KMeans
+from gmm import GMM
 
 DATA_DIR = "../../../data/"
 
@@ -10,12 +10,21 @@ def main():
     Xt = X.T
     y = data["y"]
 
-    model = KMeans(n_clusters=3, max_iter=300, tol=1e-4, random_state=42)
-    labels = model.fit_predict(Xt)
+    model = GMM(
+        n_components=3,
+        max_iter=200,
+        tol=1e-4,
+        reg_covar=1e-6,
+        random_state=42
+    )
+
+    model.fit(Xt)
+    predicted_labels = model.predict(Xt)
     
-    acc = float(np.mean(y == labels))
+    acc = float(np.mean(y == predicted_labels))
     print(acc)
     
-    
+
+
 if __name__ == "__main__":
     main()
