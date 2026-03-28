@@ -140,6 +140,7 @@ class PCA:
             raise RuntimeError("Please fit PCA before calling transform.")
         
         D_new = self._centre_oos(X_new)
+        
         if self.whiten:
             if np.any(self.explained_variance <= 0):
                 raise ValueError(
