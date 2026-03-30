@@ -312,6 +312,7 @@ def _plot_covariance_ellipse(
     covariance,
     feature_indices=(0, 1),
     n_std=2.0,
+    confidence_level=None,
     edgecolor="black",
     linewidth=2.0,
     alpha=0.25,
@@ -327,8 +328,16 @@ def _plot_covariance_ellipse(
     eigenvectors = eigenvectors[:, order]
 
     angle = np.degrees(np.arctan2(eigenvectors[1, 0], eigenvectors[0, 0]))
-    width = 2.0 * n_std * np.sqrt(max(eigenvalues[0], 0.0))
-    height = 2.0 * n_std * np.sqrt(max(eigenvalues[1], 0.0))
+
+    if confidence_level is not None:
+        if confidence_level <= 0.0 or confidence_level >= 1.0:
+            raise ValueError("confidence_level must lie strictly between 0 and 1.")
+        scale = np.sqrt(-2.0 * np.log(1.0 - confidence_level))
+    else:
+        scale = n_std
+
+    width = 2.0 * scale * np.sqrt(max(eigenvalues[0], 0.0))
+    height = 2.0 * scale * np.sqrt(max(eigenvalues[1], 0.0))
 
     ellipse = Ellipse(
         xy=mean_2d,
@@ -436,6 +445,102 @@ def plot_gmm_clusters_2d(
                 feature_indices=feature_indices,
                 edgecolor=color,
             )
+
+    ax.set_xlabel(f"Feature {feature_x}")
+    ax.set_ylabel(f"Feature {feature_y}")
+    ax.set_title(title)
+    ax.legend()
+
+    return ax
+
+
+def plot_gmm_confidence_2d(
+    X,
+    responsibilities,
+    means,
+    covariances,
+    feature_indices=(0, 1),
+    confidence_level=0.95,
+    ax=None,
+    title="GMM Responsibilities with Confidence Ellipses",
+):
+    """Plot 2D GMM responsibilities together with Gaussian confidence ellipses.
+
+    Samples are colored by their soft responsibilities: each point color is a
+    weighted blend of the component colors, so ambiguous points appear as mixed
+    colors while confident points appear close to a single component color.
+    The overlaid ellipses show the chosen confidence region for each Gaussian
+    component, for example a 95% contour when `confidence_level=0.95`.
+
+    Parameters
+    ----------
+    X : array-like of shape (d, N)
+        Data matrix with features on rows and observations on columns.
+    responsibilities : array-like of shape (k, N)
+        Soft assignment probabilities for each observation.
+    means : array-like of shape (d, k)
+        Component means.
+    covariances : array-like of shape (k, d, d)
+        Component covariance matrices.
+    feature_indices : tuple of int, default=(0, 1)
+        Pair of feature indices used for the x- and y-axes.
+    confidence_level : float, default=0.95
+        Confidence level for the Gaussian ellipses.
+    ax : matplotlib axes, optional
+        Existing axes object to draw on. If omitted, a new one is created.
+    title : str, default="GMM Responsibilities with Confidence Ellipses"
+        Title for the plot.
+
+    Returns
+    -------
+    matplotlib axes
+        The axes containing the plot.
+    """
+    X = _validate_input(X)
+    responsibilities = _validate_responsibilities(responsibilities)
+    means = np.asarray(means, dtype=float)
+    covariances = np.asarray(covariances, dtype=float)
+    feature_x, feature_y = _validate_feature_indices(X, feature_indices)
+
+    if ax is None:
+        _, ax = plt.subplots()
+
+    n_components = responsibilities.shape[0]
+    cmap = plt.get_cmap("tab10")
+    base_colors = np.array([cmap(component_index % 10)[:3] for component_index in range(n_components)])
+    blended_colors = responsibilities.T @ base_colors
+
+    ax.scatter(
+        X[feature_x, :],
+        X[feature_y, :],
+        color=blended_colors,
+        s=35,
+        alpha=0.85,
+    )
+
+    ax.scatter(
+        means[feature_x, :],
+        means[feature_y, :],
+        color="black",
+        marker="X",
+        s=180,
+        linewidths=1.0,
+        edgecolors="white",
+        label="Means",
+    )
+
+    for component_index in range(n_components):
+        color = cmap(component_index % 10)
+        _plot_covariance_ellipse(
+            ax,
+            means[:, component_index],
+            covariances[component_index],
+            feature_indices=feature_indices,
+            confidence_level=confidence_level,
+            edgecolor=color,
+            linewidth=2.0,
+            alpha=0.20,
+        )
 
     ax.set_xlabel(f"Feature {feature_x}")
     ax.set_ylabel(f"Feature {feature_y}")
